@@ -1,0 +1,6 @@
+## Interface: 16001
+## Title: LegacyPath Probe
+## Notes: One-off diagnostic. /lpprobe records what the client reports about Legacy challenges.
+## SavedVariables: LegacyPathProbeDB
+
+Probe.lua
