@@ -55,4 +55,4 @@ jobs:
           name: LegacyPath-zip
           path: .release/*.zip
           include-hidden-files: true # .release starts with a dot
-          if-no-files-found: error
+          if-no-files-found: warn # none on main when the commit is also a release tag; the tag run packages it
