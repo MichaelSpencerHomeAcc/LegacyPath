@@ -1,8 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 — 2026-11-23
 
-- Quest tracker section: unfinished pinned challenges with live progress, docked under the quest tracker. Collapsible, movable, and configurable in Settings.
+- Quest tracker section: your unfinished pinned challenges with live progress, right under the quest tracker. Docks under Questie's tracker when you use Questie. Click a challenge to open your plan, click the header to collapse it, drag it to move it. Settings let you turn it off, re-dock it and show 1–5 challenges.
+- Skill progress reads "204/225 Tailoring Skill" instead of repeating the number.
 
 ## 0.1.0 — 2026-11-09
 
