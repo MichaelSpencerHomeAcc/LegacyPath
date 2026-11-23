@@ -4,7 +4,7 @@
 
 An addon for World of Warcraft: Forever. It reads your 65 Legacy Challenges from the game, ranks the unfinished ones by how close and how doable they are, and lets you keep an ordered plan with notes.
 
-> Version 0.1.0 has **not been run in the game client yet**. The logic is covered by automated tests outside the game; see "Testing status" below.
+> The Dashboard, Next steps, Objectives and Planner tabs have been seen working in the game client with live data. The quest tracker section and the rest of the checklist below have not been tested in game yet.
 
 ## Install
 
@@ -31,8 +31,9 @@ The window also opens from the minimap button and the addon compartment. Drag th
 - **Next steps** — up to 15 recommendations. Each shows what is left, the activity, an estimated difficulty, and why it is ranked there. Hover for the full breakdown.
 - **Objectives** — all challenges by category. Click a category header to collapse it. The search box filters by name, category, profession/class, or requirement.
 - **Planner** — challenges you pinned, in your order (Up / Down), each with an optional note. It updates as progress changes and tells you in chat when a pinned challenge completes.
+- **Quest tracker section** — your unfinished pinned challenges (3 by default) appear under the quest tracker (Questie's tracker if you use Questie) with their progress lines. Click one to open your plan, click the header to collapse it, drag the header to move it. Forever does not allow Blizzard's own tracking of Legacy challenges, so this is LegacyPath's own section styled to match.
 - **Characters** — every character LegacyPath has seen: level, challenges earned on that character, and what it was working on. Other characters are **snapshots** from their last login, dated as such.
-- **Settings** — chat messages, minimap button, tooltip line, hide completed, window scale, and which categories to recommend from.
+- **Settings** — chat messages, minimap button, tooltip line, hide completed, quest tracker section (on/off, docked, how many), window scale, and which categories to recommend from.
 
 ## How recommendations are ranked
 
@@ -85,3 +86,4 @@ Still to check in the game client:
 7. A second character appears on the Characters tab and the first becomes a dated snapshot.
 8. Minimap button shows, drags, hides. The addon compartment entry opens the window.
 9. Hovering a Legacy Challenge achievement shows the LegacyPath tooltip line.
+10. Pinned challenges appear directly under the quest tracker and follow it as quests are added or removed. Dragging the header undocks it; the Settings toggle docks it again.

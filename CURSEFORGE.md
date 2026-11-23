@@ -28,6 +28,7 @@ LegacyPath reads your 65 Legacy Challenges from the game, ranks the unfinished o
 - **Dashboard** — Legacy Points out of 65, your single best next step, progress per category and recent completions.
 - **Objectives** — every challenge by category, with search and collapsible categories.
 - **Planner** — pinned challenges in your order, with notes. A chat message tells you when one completes.
+- **Quest tracker** — your pinned challenges and their progress, right under the quest tracker.
 - **Characters** — level, challenges earned and progress for each character you log in with, clearly dated as a snapshot.
 - Movable, resizable and scalable window, optional minimap button, addon compartment entry, and a short line on Legacy Challenge achievement tooltips.
 

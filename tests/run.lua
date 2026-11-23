@@ -38,7 +38,7 @@ local function fresh(world)
 	return ns, world
 end
 
-local function skill(q, req) return { { text = req .. " Skill", done = q >= req, q = q, req = req } } end
+local function skill(q, req) return { { text = req .. " Enchanting Skill", done = q >= req, q = q, req = req } } end
 local function recs(ns)
 	ns.Fire("CHANGED") -- drop the cache
 	local by = {}
@@ -207,7 +207,7 @@ do
 	eq(by[62010].blocked, false, "finished prerequisite does not block")
 	check(by[62010].why:find("60% complete", 1, true), "reason includes progress")
 	eq(by[62010].remaining, "18 more levels (27 / 45)", "remaining levels")
-	eq(by[62018].remaining, "15 more - 150 Skill (135 / 150)", "remaining skill")
+	eq(by[62018].remaining, "15 more Enchanting Skill (135 / 150)", "remaining skill")
 
 	eq(by[61499].achievable, false, "another class is not achievable on this character")
 	check(by[61499].why:find("needs a Warrior character", 1, true), "reason asks for the class")
@@ -231,6 +231,22 @@ do
 	world.challenges[62035] = { criteria = { { text = "A", done = true, q = 1, req = 1 }, { text = "B", done = false, q = 0, req = 1 } } }
 	ns.Progress.Refresh()
 	eq(ns.Recommend.Remaining(ns.Progress.states[62035], world.player), "1 of 2 left: B", "remaining encounters")
+
+	-- tracker lines
+	local steps = ns.Recommend.Steps
+	local st = ns.Progress.states
+	eq(steps(st[62018], world.player)[1], "135/150 Enchanting Skill", "tracker: counter line")
+	eq(steps(st[62010], world.player)[1], "Level 27/45", "tracker: derived level line")
+	eq(steps(st[684], world.player)[1], "Defeat Onyxia.", "tracker: requirement when no criteria")
+	world.challenges[62034] = { criteria = {} }
+	for i = 1, 6 do world.challenges[62034].criteria[i] = { text = "Boss " .. i, done = i == 1, q = 0, req = 1 } end
+	ns.Progress.Refresh()
+	local bosses, more = steps(st[62034], world.player, 3)
+	eq(#bosses, 3, "tracker: three steps")
+	eq(bosses[1], "Boss 2", "tracker: finished steps are left out")
+	eq(more, 2, "tracker: the rest are counted")
+	eq(select(2, steps(st[62035], world.player)), 0, "tracker: short lists have nothing left over")
+	eq(select(2, steps(st[684], world.player)), 0, "tracker: no criteria, nothing left over")
 end
 
 -- Planner ------------------------------------------------------------------------

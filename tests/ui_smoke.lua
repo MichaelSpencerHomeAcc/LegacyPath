@@ -6,7 +6,7 @@ local ROOT = "LegacyPath/"
 
 local frames = {}
 local returns = {
-	GetWidth = function() return 500 end, GetHeight = function() return 20 end, GetStringWidth = function() return 40 end,
+	GetWidth = function() return 500 end, GetHeight = function() return 20 end, GetStringWidth = function() return 40 end, GetStringHeight = function() return 12 end,
 	GetText = function(self) return self.text or "" end, SetText = function(self, t) self.text = t end,
 	IsShown = function() return true end, GetSize = function() return 580, 460 end,
 	GetPoint = function() return "CENTER", nil, "CENTER", 0, 0 end, GetCenter = function() return 0, 0 end,
@@ -48,6 +48,8 @@ StaticPopup_Show = function(which, _, _, data)
 	popup.EditBox.text = "a note"
 	StaticPopupDialogs[which].OnAccept(popup, data)
 end
+ObjectiveTrackerFrame = widget()
+ObjectiveTrackerFrame.NineSlice = widget()
 local hooks = {}
 Enum = { TooltipDataType = { Achievement = 1 } }
 TooltipDataProcessor = { AddTooltipPostCall = function(_, fn) hooks[#hooks + 1] = fn end }
@@ -121,5 +123,32 @@ local before = printed
 for _, f in ipairs(frames) do run(f, "OnEvent", "ACHIEVEMENT_EARNED", 62018) end
 assert(printed == before + 1, "completion is announced once")
 LegacyPath_OnAddonCompartmentClick()
+
+-- Quest tracker section: shows unfinished pinned challenges, collapses, undocks and re-docks.
+local T, st = ns.Tracker, ns.db.settings
+st.tracker, st.trackerCollapsed, st.trackerDock, st.trackerMax = true, false, true, 3
+ns.db.plan = { 62018, 684, 62034, 62010, 62054 } -- 62018 was completed above
+assert(T.Update() == 3, "tracker shows up to the limit")
+st.trackerMax = 5
+assert(T.Update() == 4, "finished pins are left out")
+st.trackerCollapsed = true
+assert(T.Update() == 0, "collapsed shows none")
+st.trackerCollapsed, st.tracker = false, false
+assert(T.Update() == 0, "turned off shows none")
+st.tracker = true
+for i = 1, #frames do if frames[i].scripts.OnDragStop then run(frames[i], "OnDragStart"); run(frames[i], "OnDragStop") end end
+assert(st.trackerDock == false and st.trackerPos, "dragging undocks and saves the position")
+st.trackerDock = true
+ns.Fire("SETTINGS")
+assert(T.Dock() == ObjectiveTrackerFrame.NineSlice, "docks under Blizzard's tracker by default")
+Questie_BaseFrame = widget()
+assert(T.Dock() == Questie_BaseFrame, "prefers Questie's tracker when it is showing")
+Questie_BaseFrame.IsShown = function() return false end
+assert(T.Dock() == ObjectiveTrackerFrame.NineSlice, "falls back when Questie's tracker is hidden")
+st.trackerDock = false
+assert(T.Dock() == nil, "free-standing when undocked")
+st.trackerDock = true
+ns.db.plan = {}
+assert(T.Update() == 0, "empty plan hides the section")
 
 io.write(("UI smoke test passed: %d files, %d widgets, %d presses\n"):format(files, #frames, presses))

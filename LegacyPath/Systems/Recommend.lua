@@ -14,13 +14,18 @@ local function bestAlt(class, chars, skip)
 	return best
 end
 
+-- A counted step's name without its target number: "225 Tailoring Skill" -> "Tailoring Skill".
+local function label(c)
+	return (c.text:gsub("^" .. c.req .. "%s+", ""))
+end
+
 -- What is left to do, in words, from the data we actually have.
 function R.Remaining(s, player)
 	local crit = s.criteria
 	if s.done then
 		return "Complete"
 	elseif #crit == 1 and crit[1].req > 1 then
-		return ("%d more - %s (%d / %d)"):format(crit[1].req - crit[1].q, crit[1].text, crit[1].q, crit[1].req)
+		return ("%d more %s (%d / %d)"):format(crit[1].req - crit[1].q, label(crit[1]), crit[1].q, crit[1].req)
 	elseif #crit > 1 then
 		local left = {}
 		for _, c in ipairs(crit) do
@@ -31,6 +36,30 @@ function R.Remaining(s, player)
 		return ("%d more levels (%d / %d)"):format(s.o.level - player.level, player.level, s.o.level)
 	end
 	return s.desc or ""
+end
+
+-- Quest-tracker style lines for an unfinished challenge: a counter, the steps left, or the requirement.
+-- Also returns how many steps were left off the list (0 when none).
+function R.Steps(s, player, max)
+	max = max or 3
+	local crit, out = s.criteria, {}
+	if #crit == 1 and crit[1].req > 1 then
+		out[1] = ("%d/%d %s"):format(crit[1].q, crit[1].req, label(crit[1]))
+	elseif #crit > 1 then
+		local left = {}
+		for _, c in ipairs(crit) do
+			if not c.done then left[#left + 1] = c.text end
+		end
+		for i = 1, math.min(max, #left) do
+			out[i] = left[i]
+		end
+		return out, math.max(#left - max, 0)
+	elseif s.source == "derived" and player then
+		out[1] = ("Level %d/%d"):format(player.level, s.o.level)
+	else
+		out[1] = s.desc or s.o.req
+	end
+	return out, 0
 end
 
 -- ctx: { player, states, chars, key, prefs = { hideCats } }. Returns nil when not recommendable.

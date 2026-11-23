@@ -20,4 +20,5 @@ UI\MainWindow.lua
 UI\Views.lua
 UI\Minimap.lua
 UI\Tooltip.lua
+UI\Tracker.lua
 Init.lua

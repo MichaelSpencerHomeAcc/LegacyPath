@@ -180,6 +180,12 @@ UI.views.settings = function()
 		toggle("Minimap button", "Show the LegacyPath button on the minimap.", "minimap"),
 		toggle("Tooltip line", "Add a LegacyPath line to Legacy Challenge achievement tooltips.", "tooltip"),
 		toggle("Hide completed objectives", "Leave finished challenges out of the Objectives tab.", "hideDone"),
+		toggle("Quest tracker section", "Show your unfinished pinned challenges under the quest tracker.", "tracker"),
+		toggle("Dock under the quest tracker", "Off after you drag the section somewhere else. Turn on to dock it again.", "trackerDock"),
+		{ title = "Challenges in the tracker", right = tostring(st.trackerMax), detail = "Shows the first ones in your plan order.", actions = {
+			{ "+", "More", function() st.trackerMax = math.min(st.trackerMax + 1, 5); ns.Fire("CHANGED") end },
+			{ "-", "Fewer", function() st.trackerMax = math.max(st.trackerMax - 1, 1); ns.Fire("CHANGED") end },
+		} },
 		{ title = "Window scale", right = pct(st.scale), detail = "Or type /lp scale 0.6 to 1.6", actions = {
 			{ "+", "Larger", function() UI.SetScale(st.scale + 0.1) end },
 			{ "-", "Smaller", function() UI.SetScale(st.scale - 0.1) end },

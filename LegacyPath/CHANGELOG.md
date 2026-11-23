@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Quest tracker section: unfinished pinned challenges with live progress, docked under the quest tracker. Collapsible, movable, and configurable in Settings.
+
 ## 0.1.0 — 2026-11-09
 
 First version. Not yet run in the game client.
