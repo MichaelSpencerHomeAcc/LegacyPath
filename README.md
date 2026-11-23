@@ -26,3 +26,15 @@ powershell -File tools/package.ps1
 ```
 
 MIT licensed — see [LegacyPath/LICENSE.txt](LegacyPath/LICENSE.txt).
+
+## Releasing
+
+Every push to `main` runs the tests and a packaging dry run in GitHub Actions. To publish:
+
+1. Set `## Version:` in `LegacyPath/LegacyPath.toc` and add a matching heading to `LegacyPath/CHANGELOG.md`.
+2. Commit, then tag and push: `git tag v0.2.0 && git push origin main v0.2.0`.
+   A `-beta` or `-alpha` suffix (`v0.2.0-beta`) uploads as Beta or Alpha.
+
+The workflow checks the tag matches the TOC version, builds the zip with the BigWigs packager (`.pkgmeta`),
+uploads it to CurseForge project 1820745 and creates a GitHub release. It needs a CurseForge API token
+in the repository secret `CF_API_KEY`.

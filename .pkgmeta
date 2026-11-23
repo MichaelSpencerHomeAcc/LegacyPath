@@ -1,0 +1,18 @@
+# BigWigs packager config. The addon lives in LegacyPath/; move-folders lifts it to the
+# package root, so the zip holds LegacyPath/LegacyPath.toc. Everything else is left out.
+package-as: LegacyPath
+
+move-folders:
+  LegacyPath/LegacyPath: LegacyPath
+
+ignore:
+  - LegacyPathProbe
+  - tests
+  - tools
+  - media
+  - RESEARCH.md
+  - CURSEFORGE.md
+
+manual-changelog:
+  filename: LegacyPath/CHANGELOG.md
+  markup-type: markdown

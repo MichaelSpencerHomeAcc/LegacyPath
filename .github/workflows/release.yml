@@ -1,0 +1,56 @@
+# Every push runs the tests and a packaging dry run. A tag like v0.2.0 (release),
+# v0.2.0-beta or v0.2.0-alpha also uploads to CurseForge and makes a GitHub release.
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: write # the packager creates the GitHub release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the packager reads tags and history
+
+      - name: Run tests
+        run: |
+          sudo apt-get install -y --no-install-recommends luajit
+          luajit tests/run.lua
+          luajit tests/ui_smoke.lua
+
+      - name: Check the tag matches the TOC version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          toc=$(sed -n 's/^## Version: *//p' LegacyPath/LegacyPath.toc | tr -d '\r')
+          tag=${GITHUB_REF_NAME#v}
+          tag=${tag%%-*}
+          if [ "$toc" != "$tag" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match ## Version: $toc in LegacyPath.toc"
+            exit 1
+          fi
+
+      - name: Package (dry run)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        uses: BigWigsMods/packager@v2
+        with:
+          args: -d
+
+      - name: Package and upload
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: BigWigsMods/packager@v2
+        env:
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}
+          GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Keep the zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: LegacyPath-zip
+          path: .release/*.zip
