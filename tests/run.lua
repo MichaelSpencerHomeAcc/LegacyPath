@@ -26,6 +26,7 @@ local function fresh(world)
 		Now = function() return world.now or 1000 end,
 		Player = function() return world.player end,
 		Discover = function() return world.discover or {} end,
+		Points = function() return world.points end,
 		Challenge = function(id)
 			local c = world.challenges[id]
 			if c == false then return nil end
@@ -292,6 +293,60 @@ do
 	eq(ns.db.chars["Main-Realm"].seen, 1000, "the other character's snapshot is untouched")
 	eq(ns.db.chars["Main-Realm"].frac[62018], 0.9, "and keeps its own progress")
 	eq(ns.Progress.key, "Alt-Realm", "current character key")
+end
+
+-- Unspent Legacy Points ---------------------------------------------------------------
+do
+	local ns, world = fresh()
+	local told = {}
+	ns.On("UNSPENT", function(n) told[#told + 1] = n end)
+	local P = ns.Progress
+	P.Refresh()
+	eq(P.points, nil, "no points before Legacy unlocks")
+	eq(#told, 0, "no reminder without data")
+	world.points = { available = 2, cap = 16 }
+	P.Refresh()
+	eq(told[1], 2, "reminder when points appear")
+	eq(ns.db.chars["Main-Realm"].unspent, 2, "snapshot records unspent points")
+	P.Refresh()
+	eq(#told, 1, "no repeat while the count stays the same")
+	world.points = { available = 1, cap = 16 }
+	local changes = 0
+	ns.On("CHANGED", function() changes = changes + 1 end)
+	P.Refresh()
+	eq(#told, 1, "spending a point does not remind")
+	eq(changes, 1, "spending a point updates the views")
+	world.points = { available = 2, cap = 16 }
+	P.Refresh()
+	eq(told[2], 2, "earning another point reminds again")
+	world.points = { available = 0, cap = 16 }
+	P.Refresh()
+	eq(#told, 2, "all spent: no reminder")
+	eq(ns.db.chars["Main-Realm"].unspent, 0, "snapshot shows none left")
+
+	-- real adapter against fake trait globals
+	local api = ns.realAPI
+	eq(api.Points(), nil, "adapter: no trait API, no points")
+	_G.Constants = { LegacyConsts = { LEGACY_TREE_PROFESSIONS_ID = 1187 } }
+	local info = { quantity = 3, maxQuantity = 16 }
+	_G.C_Traits = {
+		GetConfigIDByTreeID = function(tree) return tree == 1187 and 77 or nil end,
+		GetTreeCurrencyInfo = function(config, tree, staged)
+			assert(config == 77 and tree == 1187 and staged == false)
+			return { info }
+		end,
+	}
+	local pts = api.Points()
+	eq(pts and pts.available, 3, "adapter: available points read like Blizzard's panel")
+	eq(pts and pts.cap, 16, "adapter: spend cap")
+	_G.issecretvalue = function(v) return v == info.quantity end
+	eq(api.Points(), nil, "adapter: secret quantity is no data")
+	_G.issecretvalue = nil
+	_G.C_Traits.GetConfigIDByTreeID = function() return nil end
+	eq(api.Points(), nil, "adapter: no config before Legacy unlocks")
+	_G.C_Traits.GetConfigIDByTreeID = function() error("boom") end
+	eq(api.Points(), nil, "adapter: erroring API is no data")
+	_G.Constants, _G.C_Traits = nil, nil
 end
 
 -- SavedVariables migration -------------------------------------------------------------

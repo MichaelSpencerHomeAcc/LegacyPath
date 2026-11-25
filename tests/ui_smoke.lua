@@ -69,6 +69,7 @@ end
 local world = { [62009] = { done = true, mine = true, date = 20261109 }, [62018] = { q = 135, req = 150 }, [62034] = { n = 13 } }
 ns.API = {
 	Available = function() return true end, Now = os.time, Discover = function() return {} end,
+	Points = function() return { available = 2, cap = 16 } end,
 	Player = function() return { name = "Main", realm = "Realm", class = "WARLOCK", className = "Warlock", level = 27 } end,
 	Challenge = function(id)
 		local c, crit = world[id] or {}, {}
@@ -81,6 +82,8 @@ ns.API = {
 for _, f in ipairs(frames) do run(f, "OnEvent", "ADDON_LOADED", "LegacyPath") end
 for _, f in ipairs(frames) do run(f, "OnEvent", "PLAYER_ENTERING_WORLD") end
 assert(#ns.Progress.list == 65, "progress loaded")
+assert(printed >= 1, "unspent points reminder printed at login")
+assert(ns.UI.views.dashboard("")[1].title:find("unspent", 1, true) or ns.UI.views.dashboard("")[2].title:find("unspent", 1, true), "dashboard shows unspent points")
 ns.db.chars["Alt-Realm"] = { name = "Alt", realm = "Realm", class = "MAGE", level = 12, seen = 1, mine = {}, frac = { [61994] = 0.48 } }
 
 -- Open every tab; click every row and action, re-reading the view after each press.

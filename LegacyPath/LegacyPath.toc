@@ -1,7 +1,7 @@
 ## Interface: 16001
 ## Title: LegacyPath
 ## Notes: What should I do next to advance my Legacy? Tracks Legacy Challenges, recommends next steps and keeps a plan.
-## Version: 0.2.0
+## Version: 0.3.0
 ## Author: Michael Spencer
 ## X-License: MIT
 ## X-Curse-Project-ID: 1820745

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0 — 2026-11-25
+
+- Unspent Legacy Points reminder: one chat line at login (and when you earn more) if this character has points to spend, a line on the Dashboard, and the count per character on the Characters tab. Can be turned off in Settings.
+
 ## 0.2.0 — 2026-11-23
 
 - Quest tracker section: your unfinished pinned challenges with live progress, right under the quest tracker. Docks under Questie's tracker when you use Questie. Click a challenge to open your plan, click the header to collapse it, drag it to move it. Settings let you turn it off, re-dock it and show 1–5 challenges.

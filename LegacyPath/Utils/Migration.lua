@@ -7,7 +7,7 @@ ns.migrations = {}
 local function defaults()
 	return {
 		settings = { scale = 1, minimap = true, minimapAngle = 215, notify = true, tooltip = true, hideDone = false, hideCats = {},
-			tracker = true, trackerDock = true, trackerMax = 3, trackerCollapsed = false }, -- trackerPos is set by dragging
+			unspent = true, tracker = true, trackerDock = true, trackerMax = 3, trackerCollapsed = false }, -- trackerPos is set by dragging
 		window = {}, -- position and size
 		collapsed = {}, -- category -> true
 		plan = {}, -- ordered challenge ids

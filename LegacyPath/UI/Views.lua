@@ -67,6 +67,12 @@ UI.views.dashboard = function()
 	add({ title = "Legacy Points", right = ("%d / %d"):format(sum.points, sum.total), frac = sum.points / math.max(sum.total, 1),
 		detail = ("Account-wide. Each character can spend up to %d in the Legacy panel."):format(ns.Reference.spendCap) })
 
+	local unspent = P.points and P.points.available or 0
+	if unspent > 0 then
+		add({ title = ("|cffffd100%d unspent Legacy Point%s|r"):format(unspent, unspent == 1 and "" or "s"),
+			detail = "This character can spend " .. (unspent == 1 and "it" or "them") .. " in the Legacy panel's perk trees." })
+	end
+
 	add({ header = true, title = "Next step" })
 	local best = R.List(1)[1]
 	add(best and recommendation(best) or { title = "Nothing to recommend", detail = "Everything is done or hidden by your settings." })
@@ -158,7 +164,8 @@ UI.views.characters = function()
 		rows[#rows + 1] = {
 			title = (color and color.colorStr and "|c" .. color.colorStr or "") .. c.name .. "|r - " .. c.realm,
 			right = ("Level %d %s"):format(c.level, c.className or ""),
-			detail = ("%d earned here - %s"):format(earned, current and "live this session" or "snapshot from " .. date("%Y-%m-%d", c.seen)),
+			detail = ("%d earned here%s - %s"):format(earned, (c.unspent or 0) > 0 and (", %d unspent"):format(c.unspent) or "",
+				current and "live this session" or "snapshot from " .. date("%Y-%m-%d", c.seen)),
 			tip = lines,
 			actions = not current and { { "Forget", "Delete this snapshot", function() chars[key] = nil; UI.Render() end } } or nil,
 		}
@@ -177,6 +184,7 @@ UI.views.settings = function()
 	end
 	local rows = {
 		toggle("Completion messages", "Print a chat line when a Legacy Challenge completes.", "notify"),
+		toggle("Unspent points reminder", "Print a chat line at login, and when you earn more, if this character has Legacy Points to spend.", "unspent"),
 		toggle("Minimap button", "Show the LegacyPath button on the minimap.", "minimap"),
 		toggle("Tooltip line", "Add a LegacyPath line to Legacy Challenge achievement tooltips.", "tooltip"),
 		toggle("Hide completed objectives", "Leave finished challenges out of the Objectives tab.", "hideDone"),

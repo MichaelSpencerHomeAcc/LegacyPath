@@ -42,6 +42,7 @@ Confidence labels: **Verified** (read from the client by the probe), **Official*
 | Class challenge progress | Not reported; LegacyPath derives it from character level and labels it "derived" | By design |
 | Reward track | Faction 2802 via `C_MajorFactions`; renown level readable, but `GetRenownRewardsForLevel` returned nothing | Verified — thresholds unavailable |
 | Legacy Point total | `C_CurrencyInfo.GetCurrencyInfo(4225)` returned nil; LegacyPath counts completed challenges instead | Verified |
+| Unspent points | Blizzard's Legacy panel (`Blizzard_LegacySystemUtil.lua`, Forever UI source mirrored at Gethe/wow-ui-source `forever`) reads `C_Traits.GetTreeCurrencyInfo(C_Traits.GetConfigIDByTreeID(LEGACY_TREE_PROFESSIONS_ID), treeID, false)[1]`: `quantity` is "Available points", `maxQuantity` the seasonal spend cap | Blizzard source; the call returns values in the live client (0 and 7 recorded on two characters), not yet compared with the panel |
 | Change events | `ACHIEVEMENT_EARNED`, `CRITERIA_UPDATE`, `RECEIVED_ACHIEVEMENT_LIST` | Reported (API reference); not yet observed firing |
 | Achievement tooltip hook | `TooltipDataProcessor` with `Enum.TooltipDataType.Achievement` | Unverified in Forever; skipped if absent |
 

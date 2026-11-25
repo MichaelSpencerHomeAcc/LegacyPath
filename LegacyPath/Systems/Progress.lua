@@ -25,7 +25,7 @@ end
 local function snapshot(player)
 	if not player.class then return end
 	local snap = { name = player.name, realm = player.realm, class = player.class, className = player.className,
-		level = player.level, seen = ns.API.Now(), mine = {}, frac = {} }
+		level = player.level, seen = ns.API.Now(), mine = {}, frac = {}, unspent = P.points and P.points.available }
 	for _, s in ipairs(P.list) do
 		if s.mine then
 			snap.mine[s.id] = true
@@ -62,9 +62,15 @@ function P.Refresh()
 		if not old or old.done ~= done or old.frac ~= s.frac then changed = true end
 		P.states[o.id], list[i] = s, s
 	end
-	P.list, P.live, P.player = list, live, player
+	local points, before = api.Points(), P.points and P.points.available
+	if (points and points.available) ~= before then changed = true end
+	P.list, P.live, P.player, P.points = list, live, player, points
 	snapshot(player)
 	if changed then ns.Fire("CHANGED") end
+	-- Unspent points: say so once per session, and again whenever there are more to spend.
+	if points and points.available > 0 and (before == nil or points.available > before) then
+		ns.Fire("UNSPENT", points.available)
+	end
 	for _, s in ipairs(newly) do
 		ns.Fire("COMPLETED", s)
 	end

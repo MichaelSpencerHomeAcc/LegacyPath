@@ -38,13 +38,20 @@ frame:SetScript("OnEvent", function(_, event, arg)
 	end
 end)
 for _, event in ipairs({ "ADDON_LOADED", "PLAYER_ENTERING_WORLD", "PLAYER_REGEN_ENABLED", "PLAYER_LEVEL_UP",
-	"ACHIEVEMENT_EARNED", "CRITERIA_UPDATE", "RECEIVED_ACHIEVEMENT_LIST" }) do
-	frame:RegisterEvent(event)
+	"ACHIEVEMENT_EARNED", "CRITERIA_UPDATE", "RECEIVED_ACHIEVEMENT_LIST",
+	"TRAIT_CONFIG_UPDATED", "TRAIT_TREE_CURRENCY_INFO_UPDATED" }) do -- trait events: points spent or refunded
+	pcall(frame.RegisterEvent, frame, event) -- an event this client lacks is skipped, not an error
 end
 
 ns.On("COMPLETED", function(s)
 	if ns.db.settings.notify then
 		ns.Print(("Legacy Challenge complete: %s (+1 Legacy Point)%s"):format(s.name, ns.Planner.IsPinned(s.id) and " - it was on your plan" or ""))
+	end
+end)
+
+ns.On("UNSPENT", function(n)
+	if ns.db.settings.unspent then
+		ns.Print(("You have %d unspent Legacy Point%s on this character. Spend %s in the Legacy panel."):format(n, n == 1 and "" or "s", n == 1 and "it" or "them"))
 	end
 end)
 

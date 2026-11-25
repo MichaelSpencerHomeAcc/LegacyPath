@@ -61,6 +61,21 @@ function API.Challenge(id)
 	return c
 end
 
+-- Legacy Points this character can still spend, read the way Blizzard's Legacy panel reads
+-- "Available points": the Legacy trees' shared currency, via the Professions tree.
+-- Returns { available, cap } or nil before Legacy unlocks or if the client says nothing.
+function API.Points()
+	local traits, consts = G.C_Traits, G.Constants and G.Constants.LegacyConsts
+	local tree = consts and consts.LEGACY_TREE_PROFESSIONS_ID
+	if not (traits and tree) then return nil end
+	local config = plain(call(traits.GetConfigIDByTreeID, tree))
+	local list = config and call(traits.GetTreeCurrencyInfo, config, tree, false)
+	local info = type(list) == "table" and list[1]
+	local available = type(info) == "table" and tonumber(plain(info.quantity))
+	if not available then return nil end
+	return { available = available, cap = tonumber(plain(info.maxQuantity)) }
+end
+
 local function categoryPath(cat)
 	local name, parent = call(G.GetCategoryInfo, cat)
 	local sub, top = name, name
