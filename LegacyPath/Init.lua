@@ -34,24 +34,19 @@ frame:SetScript("OnEvent", function(_, event, arg)
 			Queue()
 		end
 	else
+		if event == "PLAYER_ENTERING_WORLD" and arg then ns.Progress.login = true end -- arg: isInitialLogin
 		Queue()
 	end
 end)
 for _, event in ipairs({ "ADDON_LOADED", "PLAYER_ENTERING_WORLD", "PLAYER_REGEN_ENABLED", "PLAYER_LEVEL_UP",
 	"ACHIEVEMENT_EARNED", "CRITERIA_UPDATE", "RECEIVED_ACHIEVEMENT_LIST",
-	"TRAIT_CONFIG_UPDATED", "TRAIT_TREE_CURRENCY_INFO_UPDATED" }) do -- trait events: points spent or refunded
+	"SKILL_LINES_CHANGED", "TRAIT_CONFIG_UPDATED", "TRAIT_TREE_CURRENCY_INFO_UPDATED" }) do -- trait events: points spent or refunded
 	pcall(frame.RegisterEvent, frame, event) -- an event this client lacks is skipped, not an error
 end
 
 ns.On("COMPLETED", function(s)
 	if ns.db.settings.notify then
 		ns.Print(("Legacy Challenge complete: %s (+1 Legacy Point)%s"):format(s.name, ns.Planner.IsPinned(s.id) and " - it was on your plan" or ""))
-	end
-end)
-
-ns.On("UNSPENT", function(n)
-	if ns.db.settings.unspent then
-		ns.Print(("You have %d unspent Legacy Point%s on this character. Spend %s in the Legacy panel."):format(n, n == 1 and "" or "s", n == 1 and "it" or "them"))
 	end
 end)
 
@@ -70,10 +65,17 @@ SlashCmdList.LEGACYPATH = function(msg)
 		ns.db.settings.minimap = not ns.db.settings.minimap
 		ns.Fire("SETTINGS")
 		ns.Fire("CHANGED")
+	elseif cmd == "points" then
+		local points = ns.Progress.points
+		if points and points.available > 0 then
+			ns.Fire("UNSPENT", points.available)
+		else
+			ns.Print(points and "No unspent Legacy Points on this character." or "The game reports no Legacy Points for this character yet.")
+		end
 	elseif cmd == "reset" then
 		ns.UI.ResetPosition()
 	else
-		ns.Print("/lp - open or close | /lp next - top 3 next steps | /lp scale 0.6-1.6 | /lp minimap | /lp reset - recentre the window")
+		ns.Print("/lp - open or close | /lp next - top 3 next steps | /lp scale 0.6-1.6 | /lp minimap | /lp points - show the unspent points reminder | /lp reset - recentre the window")
 	end
 end
 

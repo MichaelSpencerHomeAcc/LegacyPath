@@ -1,7 +1,7 @@
 ## Interface: 16001
 ## Title: LegacyPath
 ## Notes: What should I do next to advance my Legacy? Tracks Legacy Challenges, recommends next steps and keeps a plan.
-## Version: 0.3.0
+## Version: 0.3.1
 ## Author: Michael Spencer
 ## X-License: MIT
 ## X-Curse-Project-ID: 1820745
@@ -22,4 +22,5 @@ UI\Views.lua
 UI\Minimap.lua
 UI\Tooltip.lua
 UI\Tracker.lua
+UI\Bubble.lua
 Init.lua

@@ -53,7 +53,8 @@ ObjectiveTrackerFrame.NineSlice = widget()
 local hooks = {}
 Enum = { TooltipDataType = { Achievement = 1 } }
 TooltipDataProcessor = { AddTooltipPostCall = function(_, fn) hooks[#hooks + 1] = fn end }
-local printed = 0
+local printed, panelCallback = 0, nil
+EventRegistry = { RegisterCallback = function(_, _, fn) panelCallback = fn end }
 print = function() printed = printed + 1 end
 
 -- Load in .toc order.
@@ -80,11 +81,11 @@ ns.API = {
 }
 
 for _, f in ipairs(frames) do run(f, "OnEvent", "ADDON_LOADED", "LegacyPath") end
-for _, f in ipairs(frames) do run(f, "OnEvent", "PLAYER_ENTERING_WORLD") end
+for _, f in ipairs(frames) do run(f, "OnEvent", "PLAYER_ENTERING_WORLD", true, false) end
 assert(#ns.Progress.list == 65, "progress loaded")
 assert(printed >= 1, "unspent points reminder printed at login")
 assert(ns.UI.views.dashboard("")[1].title:find("unspent", 1, true) or ns.UI.views.dashboard("")[2].title:find("unspent", 1, true), "dashboard shows unspent points")
-ns.db.chars["Alt-Realm"] = { name = "Alt", realm = "Realm", class = "MAGE", level = 12, seen = 1, mine = {}, frac = { [61994] = 0.48 } }
+ns.db.chars["Alt-Realm"] = { name = "Alt", realm = "Realm", class = "MAGE", className = "Mage", level = 12, seen = 1, profs = { [171] = 40 }, unspent = 2 }
 
 -- Open every tab; click every row and action, re-reading the view after each press.
 local presses = 0
@@ -104,6 +105,14 @@ for _, tab in ipairs(ns.UI.tabs) do
 	end
 end
 ns.UI.Show("objectives", "Raids")
+ns.Progress.Refresh()
+assert(ns.Progress.states[61994].closest.name == "Alt", "the Mage alt is closest to Novice Mage")
+for _, row in ipairs(ns.UI.views.characters("")) do
+	for _, action in ipairs(row.actions or {}) do
+		if action[1] == "Forget" then action[3]() end
+	end
+end
+assert(ns.Progress.states[61994].closest == nil, "a forgotten character is no longer named")
 
 -- Widget scripts: hover, click, drag and resize on everything that was created.
 for _, script in ipairs({ "OnEnter", "OnLeave", "OnClick", "OnDragStart", "OnUpdate", "OnDragStop", "OnMouseDown", "OnMouseUp", "OnSizeChanged" }) do
@@ -128,6 +137,55 @@ assert(printed == before + 1, "completion is announced once")
 LegacyPath_OnAddonCompartmentClick()
 
 -- Quest tracker section: shows unfinished pinned challenges, collapses, undocks and re-docks.
+-- Unspent points bubble: chat line when it cannot show, bubble otherwise.
+before = printed
+SlashCmdList.LEGACYPATH("points")
+assert(printed == before + 1, "no Legacy button: the reminder goes to chat")
+local visible, shown = true, false
+LegacyMicroButton = widget()
+LegacyMicroButton.IsVisible = function() return visible end
+local makeFrame = CreateFrame
+CreateFrame = function(kind, name, parent, template)
+	if template == "GlowBoxTemplate" then error("no such template") end
+	return makeFrame(kind, name, parent, template)
+end
+SlashCmdList.LEGACYPATH("points")
+assert(printed == before + 2, "missing bubble template: the reminder goes to chat")
+local box
+CreateFrame = function(kind, name, parent, template)
+	local w = makeFrame(kind, name, parent, template)
+	if name == "LegacyPathBubble" then
+		box = w
+		w.Show, w.Hide, w.IsShown = function() shown = true end, function() shown = false end, function() return shown end
+		w.text = widget() -- replaced by the addon
+	end
+	return w
+end
+SlashCmdList.LEGACYPATH("points")
+assert(shown and printed == before + 2, "bubble shows instead of the chat line")
+assert(box.text.text:find("2 unspent Legacy Points", 1, true), "bubble says how many")
+ns.Fire("CHANGED")
+assert(shown, "stays while there are points to spend")
+local realPoints = ns.Progress.points
+ns.Progress.points = { available = 1 }
+ns.Fire("CHANGED")
+assert(box.text.text:find("1 unspent Legacy Point on", 1, true), "count updates while shown")
+ns.Progress.points = { available = 0 }
+ns.Fire("CHANGED")
+assert(not shown, "hides when all are spent")
+ns.Progress.points = realPoints
+SlashCmdList.LEGACYPATH("points")
+LegacySystemFrame = { IsShown = function() return false end }
+panelCallback()
+assert(shown, "stays while the Legacy panel is closed")
+LegacySystemFrame = { IsShown = function() return true end }
+panelCallback()
+assert(not shown, "hides when the Legacy panel opens")
+LegacyMicroButton.GetCenter = function() return 0, 1000 end
+SlashCmdList.LEGACYPATH("points")
+assert(shown, "shows below a micro menu at the top of the screen")
+CreateFrame = makeFrame
+
 local T, st = ns.Tracker, ns.db.settings
 st.tracker, st.trackerCollapsed, st.trackerDock, st.trackerMax = true, false, true, 3
 ns.db.plan = { 62018, 684, 62034, 62010, 62054 } -- 62018 was completed above

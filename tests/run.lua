@@ -31,7 +31,7 @@ local function fresh(world)
 			local c = world.challenges[id]
 			if c == false then return nil end
 			c = c or {}
-			return { name = c.name or ns.Data.byId[id].name, desc = c.desc, done = c.done == true, mine = c.mine == true,
+			return { name = c.name or ns.Data.byId[id].name, desc = c.desc, done = c.done == true,
 				date = c.date, criteria = c.criteria or {} }
 		end,
 	}
@@ -105,7 +105,8 @@ do
 	end
 	local api = fresh().realAPI
 	local c = api.Challenge(1)
-	eq(c.done and c.mine, true, "adapter: account and character completion read")
+	eq(c.done, true, "adapter: account completion read")
+	eq(c.mine, nil, "adapter: no per-character completion, the API's value is wrong for Legacy")
 	eq(c.date, 20261109, "adapter: completion date")
 	eq(c.criteria[1].q, 135, "adapter: criteria quantity")
 	eq(c.criteria[2].q, 0, "adapter: secret quantity becomes 0")
@@ -192,8 +193,9 @@ end
 
 -- Recommendation scoring ---------------------------------------------------------
 do
-	local ns, world = fresh({ challenges = {
-		[62009] = { done = true, mine = true },
+	local ns, world = fresh({ player = { name = "Main", realm = "Realm", class = "WARLOCK", className = "Warlock", level = 27,
+		profs = { [333] = 135 } }, challenges = {
+		[62009] = { done = true },
 		[62018] = { criteria = skill(135, 150) },
 		[62019] = { criteria = skill(135, 225) },
 		[62024] = { criteria = skill(78, 150) },
@@ -201,6 +203,9 @@ do
 	ns.Progress.Refresh()
 	local by = recs(ns)
 	eq(by[62018].rank, 1, "closest achievable challenge ranks first")
+	check(by[62018].why:find("this character is closest", 1, true), "reason says this character is closest")
+	check(not by[684].achievable and not by[684].why:find("can work on it", 1, true), "no claim about raids this character may not be able to do")
+	eq(by[684].why, "not started", "a reason is always given")
 	eq(by[62009], nil, "completed challenges are not recommended")
 	check(by[62018].score > by[62024].score, "more progress scores higher")
 	eq(by[62019].blocked, true, "unfinished earlier tier blocks the next")
@@ -217,7 +222,8 @@ do
 	check(by[62033].score < by[62031].score, "unachievable ranks lower")
 
 	-- an alt's snapshot feeds class challenges, and is described as a snapshot
-	ns.db.chars["Alt-Realm"] = { name = "Alt", realm = "Realm", class = "WARRIOR", level = 20, seen = 1, mine = {}, frac = {} }
+	ns.db.chars["Alt-Realm"] = { name = "Alt", realm = "Realm", class = "WARRIOR", level = 20, seen = 1 }
+	ns.Progress.Refresh()
 	by = recs(ns)
 	eq(by[61499].frac, 0.8, "alt level drives class progress")
 	check(by[61499].why:find("level 20 when last seen", 1, true), "alt data is labelled as last seen")
@@ -231,23 +237,23 @@ do
 	-- multi-criteria remaining text
 	world.challenges[62035] = { criteria = { { text = "A", done = true, q = 1, req = 1 }, { text = "B", done = false, q = 0, req = 1 } } }
 	ns.Progress.Refresh()
-	eq(ns.Recommend.Remaining(ns.Progress.states[62035], world.player), "1 of 2 left: B", "remaining encounters")
+	eq(ns.Recommend.Remaining(ns.Progress.states[62035]), "1 of 2 left: B", "remaining encounters")
 
 	-- tracker lines
 	local steps = ns.Recommend.Steps
 	local st = ns.Progress.states
-	eq(steps(st[62018], world.player)[1], "135/150 Enchanting Skill", "tracker: counter line")
-	eq(steps(st[62010], world.player)[1], "Level 27/45", "tracker: derived level line")
-	eq(steps(st[684], world.player)[1], "Defeat Onyxia.", "tracker: requirement when no criteria")
+	eq(steps(st[62018])[1], "135/150 Enchanting Skill", "tracker: counter line")
+	eq(steps(st[62010])[1], "Level 27/45", "tracker: derived level line")
+	eq(steps(st[684])[1], "Defeat Onyxia.", "tracker: requirement when no criteria")
 	world.challenges[62034] = { criteria = {} }
 	for i = 1, 6 do world.challenges[62034].criteria[i] = { text = "Boss " .. i, done = i == 1, q = 0, req = 1 } end
 	ns.Progress.Refresh()
-	local bosses, more = steps(st[62034], world.player, 3)
+	local bosses, more = steps(st[62034], 3)
 	eq(#bosses, 3, "tracker: three steps")
 	eq(bosses[1], "Boss 2", "tracker: finished steps are left out")
 	eq(more, 2, "tracker: the rest are counted")
-	eq(select(2, steps(st[62035], world.player)), 0, "tracker: short lists have nothing left over")
-	eq(select(2, steps(st[684], world.player)), 0, "tracker: no criteria, nothing left over")
+	eq(select(2, steps(st[62035])), 0, "tracker: short lists have nothing left over")
+	eq(select(2, steps(st[684])), 0, "tracker: no criteria, nothing left over")
 end
 
 -- Planner ------------------------------------------------------------------------
@@ -274,25 +280,124 @@ do
 	eq(Pl.List()[1].id, 684, "list follows plan order")
 end
 
--- Characters: per-character versus account-wide ---------------------------------------
+-- Characters: what is account-wide, what belongs to a character, and who is closest -----
 do
-	local ns, world = fresh({ challenges = { [62009] = { done = true, mine = true }, [62018] = { criteria = skill(135, 150) } } })
-	ns.Progress.Refresh()
-	local main = ns.db.chars["Main-Realm"]
-	eq(main.mine[62009], true, "snapshot records what this character earned")
-	eq(main.frac[62018], 0.9, "snapshot records progress")
-	eq(main.frac[62010], 0.6, "snapshot records derived progress")
+	local main = { name = "Main", realm = "Realm", class = "WARLOCK", className = "Warlock", level = 56, profs = { [197] = 204 } }
+	local rogue = { name = "Alt", realm = "Realm", class = "ROGUE", className = "Rogue", level = 1, profs = {} }
+	local tailor = { { text = "225 Tailoring Skill", done = false, q = 204, req = 225 } }
+	local ns, world = fresh({ player = main, challenges = { [62009] = { done = true }, [62029] = { criteria = tailor } } })
+	local P, R = ns.Progress, ns.Recommend
+	local function play(player) world.player = player; P.Refresh(); return P.states, recs(ns) end
 
-	world.player = { name = "Alt", realm = "Realm", class = "MAGE", className = "Mage", level = 5 }
-	world.challenges[62009] = { done = true, mine = false }
-	world.challenges[62018] = nil
+	local st, by = play(main)
+	eq(st[62029].closest.here, true, "playing the tailor: this character is closest")
+	eq(R.Steps(st[62029])[1], "204/225 Tailoring Skill", "no name needed on that character")
+	eq(R.Steps(st[62011])[1], "Level 56/60", "own class level")
+	eq(by[62029].achievable, true, "and can work on it")
+
 	world.now = 2000
+	st, by = play(rogue)
+	eq(st[62009].done, true, "completion is account-wide")
+	eq(st[62029].frac, 204 / 225, "skill progress is account-wide")
+	eq(R.Steps(st[62029])[1], "204/225 Tailoring Skill (Main)", "on an alt, the tracker names the tailor")
+	eq(R.Steps(st[62011])[1], "Level 56/60 (Main)", "and the closest Warlock")
+	eq(R.Remaining(st[62011]), "4 more levels (56 / 60) (Main)", "remaining names them too")
+	eq(by[62029].achievable, false, "the alt is not told it can work on it")
+	check(by[62029].why:find("closest: Main, Tailoring 204 when last seen", 1, true), "reason names character and skill")
+	check(by[62011].why:find("closest: Main, level 56 when last seen", 1, true), "reason names character and level")
+	check(by[62033].why:find("closest: Main, level 56 when last seen", 1, true), "dungeons name a character high enough")
+	eq(R.Steps(st[62033])[1], st[62033].desc, "dungeon lines carry no name")
+	check(by[62012].why:find("no character recorded with Alchemy", 1, true), "nobody has the profession")
+	local alt = ns.db.chars["Alt-Realm"]
+	eq(alt.mine, nil, "nothing account-wide is stored per character")
+	eq(alt.frac, nil, "no progress stored per character")
+	eq(ns.db.chars["Main-Realm"].seen, 1000, "the other snapshot is untouched")
+	eq(ns.db.chars["Main-Realm"].profs[197], 204, "and keeps its skills")
+
+	-- the account's best belongs to a character LegacyPath has not seen
+	tailor[1].q = 220
+	st, by = play(rogue)
+	eq(st[62029].closest, nil, "does not credit a lower character")
+	check(by[62029].why:find("closest character not recorded yet", 1, true), "says so")
+	tailor[1].q = 204
+
+	-- two of the same class, and changes during a session
+	ns.db.chars["Second-Realm"] = { name = "Second", realm = "Realm", class = "WARLOCK", level = 51, seen = 1 }
+	st = play(rogue)
+	eq(st[62011].closest.name, "Main", "the higher of two Warlocks")
+	local changes = 0
+	ns.On("CHANGED", function() changes = changes + 1 end)
+	ns.db.chars["Second-Realm"].level = 58
+	st = play(rogue)
+	eq(st[62011].closest.name, "Second", "follows whoever is ahead")
+	check(changes > 0, "and the views are told")
+	rogue.profs = { Tailoring = 204 }
+	st = play(rogue)
+	eq(st[62029].closest.here, true, "a tie goes to the character being played; names match too")
+	ns.db.chars["Old-Realm"] = { name = "Old", realm = "Realm", class = "MAGE", level = 10, seen = 1 }
+	st = play(rogue)
+	eq(st[61994].closest.name, "Old", "a snapshot without professions is fine")
+end
+
+-- Full names ---------------------------------------------------------------------------
+do
+	local api = fresh().realAPI
+	_G.UnitName = function() return "Kat", "Lo" end
+	_G.GetRealmName = function() return "" end
+	local p = api.Player()
+	eq(p.name, "Kat Lo", "adapter: first and last name")
+	eq(p.first, "Kat", "adapter: first name kept apart")
+	_G.Constants = { CharacterNameSeparatorConsts = { CHARACTERNAME_SURNAME_SEPARATOR = "~" } }
+	eq(api.Player().name, "Kat~Lo", "adapter: the game's own separator")
+	_G.Constants = nil
+	_G.UnitName = function() return "Kat", nil end
+	eq(api.Player().name, "Kat", "adapter: no surname")
+	eq(api.Player().first, nil, "adapter: and no separate first name")
+	_G.UnitName = function() return "Kat", "Realm" end
+	_G.GetRealmName = function() return "Realm" end
+	eq(api.Player().name, "Kat", "adapter: a realm is not a surname")
+	_G.UnitName, _G.GetRealmName = nil, nil
+
+	-- same first name, different characters; old first-name records give way on login
+	local function char(first, last, class, level)
+		return { name = first .. " " .. last, first = first, realm = "", class = class, className = class, level = level, profs = {} }
+	end
+	local ns, world = fresh({ player = char("Kat", "Lo", "MAGE", 10), points = { available = 4, cap = 16 } })
+	ns.db.chars["Kat-"] = { name = "Kat", realm = "", class = "MAGE", level = 9, seen = 5, unspent = 4 }
+	ns.db.chars["Kat-Old"] = { name = "Kat", realm = "Old", class = "WARRIOR", level = 30, seen = 4 }
+	local said = 0
+	ns.On("UNSPENT", function() said = said + 1 end)
 	ns.Progress.Refresh()
-	eq(ns.Progress.states[62009].done, true, "account-wide completion shows on the alt")
-	eq(ns.db.chars["Alt-Realm"].mine[62009], nil, "but is not credited to the alt")
-	eq(ns.db.chars["Main-Realm"].seen, 1000, "the other character's snapshot is untouched")
-	eq(ns.db.chars["Main-Realm"].frac[62018], 0.9, "and keeps its own progress")
-	eq(ns.Progress.key, "Alt-Realm", "current character key")
+	check(ns.db.chars["Kat Lo"], "saved under the full name")
+	eq(ns.db.chars["Kat-"], nil, "its old first-name record is replaced")
+	check(ns.db.chars["Kat-Old"], "another class's record is left alone")
+	eq(said, 0, "its known unspent points carry over, so a reload stays quiet")
+	world.player = char("Kat", "Astrofen", "MAGE", 20)
+	ns.Progress.Refresh()
+	check(ns.db.chars["Kat Lo"] and ns.db.chars["Kat Astrofen"], "two with the same first name and class do not overwrite each other")
+	world.player = { name = "Bob", realm = "", class = "ROGUE", className = "Rogue", level = 1, profs = {} }
+	ns.Progress.Refresh()
+	eq(ns.Recommend.Steps(ns.Progress.states[61994])[1], "Level 20/25 (Kat Astrofen)", "the tracker shows first and last name")
+end
+
+-- Real adapter: profession skills ----------------------------------------------------------
+do
+	local api = fresh().realAPI
+	eq(next(api.Professions()), nil, "no profession API, no skills")
+	_G.GetProfessions = function() return 5, nil, nil, 9, 11 end
+	local data = { [5] = { "Tailoring", 1, 204, 225, 1, 1, 197 }, [9] = { "Fishing", 1, 0, 0, 1, 1, 356 }, [11] = { "Cooking", 1, 0, 0, 1, 1, 185 } }
+	_G.GetProfessionInfo = function(i) return unpack(data[i]) end
+	local p = api.Professions()
+	eq(p[197], 204, "skill by skill line")
+	eq(p.Tailoring, 204, "skill by name")
+	eq(p[356], nil, "zero skill is not recorded")
+	_G.C_TradeSkillUI = { GetProfessionInfoBySkillLineID = function(l) return { skillLevel = l == 185 and 77 or 0 } end }
+	p = api.Professions()
+	eq(p[185], 77, "second source used when the first is empty")
+	eq(p[197], 204, "first source kept when the second is empty")
+	_G.GetProfessionInfo = function() error("boom") end
+	eq(next(api.Professions()), nil, "erroring API is no data")
+	_G.GetProfessions, _G.GetProfessionInfo, _G.C_TradeSkillUI = nil, nil, nil
 end
 
 -- Unspent Legacy Points ---------------------------------------------------------------
@@ -324,6 +429,48 @@ do
 	eq(#told, 2, "all spent: no reminder")
 	eq(ns.db.chars["Main-Realm"].unspent, 0, "snapshot shows none left")
 
+	-- across sessions: a new addon instance on the same saved data
+	local db = { v = ns.db }
+	local function start(available, isLogin, player)
+		local n2, w = fresh({ points = { available = available, cap = 16 }, player = player })
+		n2.db = db.v
+		n2.Progress.login = isLogin or nil
+		local said = { n = 0 }
+		n2.On("UNSPENT", function() said.n = said.n + 1 end)
+		n2.Progress.Refresh()
+		n2.Progress.Refresh()
+		return said, n2, w
+	end
+	local alt = { name = "Alt", realm = "Realm", class = "MAGE", className = "Mage", level = 1 }
+	eq(start(7, true, alt).n, 1, "a login reminds, once")
+	eq(start(7, true, alt).n, 1, "the next login reminds again")
+	eq(start(7, false, alt).n, 0, "a reload does not")
+	eq(start(8, false, alt).n, 1, "unless there are more points to spend")
+	eq(start(5, false, alt).n, 0, "spending and reloading does not")
+	eq(start(0, true, alt).n, 0, "nothing to spend, nothing said")
+	eq(start(3, true).n, 1, "another character reminds at its own login")
+	db.v.settings.unspent = false
+	eq(start(9, true, alt).n, 0, "turned off: silent")
+	db.v.settings.unspent = true
+	local said, n3, w3 = start(9, true, alt)
+	eq(said.n, 1, "turned back on: reminds at the next login")
+	w3.points = { available = 8, cap = 16 }
+	n3.Progress.Refresh()
+	w3.points = nil
+	n3.Progress.Refresh()
+	w3.points = { available = 8, cap = 16 }
+	n3.Progress.Refresh()
+	eq(said.n, 1, "spending, or a gap in the data, does not remind again")
+	-- points not ready at the first refresh after login
+	local n4, w4 = fresh({ player = alt })
+	n4.db, n4.Progress.login = db.v, true
+	said = 0
+	n4.On("UNSPENT", function() said = said + 1 end)
+	n4.Progress.Refresh()
+	w4.points = { available = 8, cap = 16 }
+	n4.Progress.Refresh()
+	eq(said, 1, "still reminds when the points arrive late")
+
 	-- real adapter against fake trait globals
 	local api = ns.realAPI
 	eq(api.Points(), nil, "adapter: no trait API, no points")
@@ -353,9 +500,20 @@ end
 do
 	local ns = fresh()
 	local db = ns.Migrate(nil)
-	eq(db.version, 1, "new database is versioned")
+	eq(db.version, 3, "new database is versioned")
 	eq(db.settings.notify, true, "defaults filled")
-	eq(ns.Migrate("garbage").version, 1, "garbage input is replaced")
+	eq(ns.Migrate("garbage").version, 3, "garbage input is replaced")
+	db = ns.Migrate({ version = 2, chars = {
+		["A-"] = { name = "A", class = "MAGE", seen = 9, level = 20 }, ["A-Realm"] = { name = "A", class = "MAGE", seen = 3, level = 10 },
+		["B-Realm"] = { name = "B", class = "MAGE", seen = 1 }, ["B-"] = { name = "B", class = "ROGUE", seen = 2 }, ["C-"] = {} } })
+	eq(db.chars["A-"].level, 20, "duplicate characters: the newest is kept")
+	eq(db.chars["A-Realm"], nil, "and the older one dropped")
+	check(db.chars["B-Realm"] and db.chars["B-"], "same first name but another class is not a duplicate")
+	check(db.chars["C-"], "an incomplete record is tolerated")
+	db = ns.Migrate({ version = 1, chars = { ["A-R"] = { level = 1, unspent = 7, mine = { [1] = true }, frac = { [2] = 0.9 } } } })
+	eq(db.chars["A-R"].mine, nil, "wrong per-character completions are dropped")
+	eq(db.chars["A-R"].frac, nil, "wrong per-character progress is dropped")
+	eq(db.chars["A-R"].unspent, 7, "real per-character data is kept")
 
 	db = ns.Migrate({ version = 1, plan = { 684 }, settings = { notify = false, hideCats = { Raids = true } }, chars = "bad" })
 	eq(db.plan[1], 684, "existing data kept")
@@ -364,7 +522,7 @@ do
 	eq(db.settings.scale, 1, "missing setting filled")
 	eq(type(db.chars), "table", "wrong-typed table repaired")
 
-	ns.DB_VERSION = 3
+	ns.DB_VERSION, ns.migrations = 3, {}
 	ns.migrations[1] = function(d) d.plan, d.pinned = d.pinned, nil end
 	ns.migrations[2] = function(d) d.steps = (d.steps or 0) + 1 end
 	db = ns.Migrate({ version = 1, pinned = { 684 } })

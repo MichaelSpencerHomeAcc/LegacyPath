@@ -54,13 +54,13 @@ for _, c in ipairs(classes) do
 end
 
 local professions = {
-	{ "Alchemy", "Alchemist", 62012 }, { "Blacksmithing", "Blacksmith", 62015 }, { "Enchanting", "Enchanter", 62018 },
-	{ "Engineering", "Engineer", 62021 }, { "Leatherworking", "Leatherworker", 62024 }, { "Tailoring", "Tailor", 62028 },
+	{ "Alchemy", "Alchemist", 62012, 171 }, { "Blacksmithing", "Blacksmith", 62015, 164 }, { "Enchanting", "Enchanter", 62018, 333 },
+	{ "Engineering", "Engineer", 62021, 202 }, { "Leatherworking", "Leatherworker", 62024, 165 }, { "Tailoring", "Tailor", 62028, 197 },
 }
 for _, p in ipairs(professions) do
 	for i, tier in ipairs({ { "Journeyman", 150 }, { "Expert", 225 }, { "Artisan", 300 } }) do
 		local id = p[3] + i - 1
-		D.Add({ id = id, cat = "Tradeskills", sub = p[1], name = tier[1] .. " " .. p[2], diff = i, prereq = i > 1 and id - 1 or nil,
+		D.Add({ id = id, cat = "Tradeskills", sub = p[1], skillLine = p[4], name = tier[1] .. " " .. p[2], diff = i, prereq = i > 1 and id - 1 or nil,
 			req = ("Reach %d skill in %s for the first time."):format(tier[2], p[1]) })
 	end
 end

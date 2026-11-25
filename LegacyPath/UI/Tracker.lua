@@ -136,7 +136,7 @@ function T.Update()
 		if s then
 			local b = blocks[i] or NewBlock()
 			blocks[i] = b
-			local steps, more = ns.Recommend.Steps(s, ns.Progress.player)
+			local steps, more = ns.Recommend.Steps(s)
 			for k, line in ipairs(steps) do
 				steps[k] = "- " .. line
 			end

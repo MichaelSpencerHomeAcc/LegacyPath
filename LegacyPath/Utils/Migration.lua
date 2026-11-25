@@ -1,8 +1,29 @@
 -- Versioned SavedVariables. ns.migrations[n] upgrades a database from version n to n + 1.
 local _, ns = ...
 
-ns.DB_VERSION = 1
-ns.migrations = {}
+ns.DB_VERSION = 3
+ns.migrations = {
+	-- 1 -> 2: drop account-wide progress that was stored as if it belonged to each character.
+	[1] = function(db)
+		for _, c in pairs(type(db.chars) == "table" and db.chars or {}) do
+			c.mine, c.frac = nil, nil
+		end
+	end,
+	-- 2 -> 3: Forever dropped realm names, which saved characters a second time. Keep the newest.
+	[2] = function(db)
+		local newest = {}
+		for key, c in pairs(type(db.chars) == "table" and db.chars or {}) do
+			local id = tostring(c.name) .. "/" .. tostring(c.class)
+			local other = newest[id]
+			if other and (db.chars[other].seen or 0) >= (c.seen or 0) then
+				db.chars[key] = nil
+			else
+				if other then db.chars[other] = nil end
+				newest[id] = key
+			end
+		end
+	end,
+}
 
 local function defaults()
 	return {

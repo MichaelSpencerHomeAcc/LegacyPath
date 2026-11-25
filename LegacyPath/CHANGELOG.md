@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.1 — 2026-11-25
+
+- Fixed: challenge progress and completions are account-wide, but LegacyPath showed them as belonging to each character. The Characters tab listed the account's challenges as "earned here" on every alt, tooltips could say "Earned on this character" wrongly, and recommendations could claim the current character could work on a profession it does not have. The wrong saved values are removed automatically.
+- New: class and profession challenges name your closest character, in recommendations, tooltips, the planner and the quest tracker section ("204/225 Tailoring Skill (Name)"). Log in to each character once so LegacyPath can record its professions.
+- The Characters tab shows each character's real professions, unspent points and the challenges it is closest to.
+- Characters show their first and last names, and two characters with the same first name no longer overwrite each other. Characters saved twice since Forever dropped realm names are merged, keeping the newest; one saved under a first name only is replaced when you next log in to it.
+- The unspent points reminder is now a bubble pointing at the Legacy button on the micro menu (a chat line if that button is hidden). It closes when you dismiss it, open the Legacy panel or spend the points. `/lp points` shows it on demand.
+- The reminder appears at every login, and when you have more points to spend, but no longer after a `/reload`.
+
 ## 0.3.0 — 2026-11-25
 
 - Unspent Legacy Points reminder: one chat line at login (and when you earn more) if this character has points to spend, a line on the Dashboard, and the count per character on the Characters tab. Can be turned off in Settings.

@@ -37,7 +37,9 @@ Confidence labels: **Verified** (read from the client by the probe), **Official*
 | Is there a `C_Legacy` namespace? | No. Legacy globals are UI helpers only (`ToggleLegacySystemUI`, `ShowLegacyChallenge`, …) | Verified |
 | How are challenges exposed? | As achievements: `GetCategoryList`, `GetCategoryNumAchievements`, `GetAchievementInfo`, `GetAchievementNumCriteria`, `GetAchievementCriteriaInfo` | Verified |
 | Which achievements are challenges? | `C_Traits.GetTraitCurrencyForAchievement(Constants.LegacyConsts.LEGACY_POINTS_TRAIT_CURRENCY_ID, id) > 0` (currency 4225) | Verified |
-| Account vs character completion | `GetAchievementInfo` return 4 = earned on the account, return 13 = earned by this character. Both were true for Novice Warlock on the probing character | Verified for one case |
+| Account vs character completion | Completion and criteria are account-wide. Return 13 ("earned by this character") is **not** usable for Legacy: four level 1 characters (Priest, Rogue, Paladin, Warrior) each reported 6-7 challenges as theirs, and the same 204/225 Tailoring and dungeon progress as the main. Dungeon progress pooling across two characters was also confirmed by the player. An earlier version of these notes wrongly listed return 13 as per-character | Verified from saved data |
+| Per-character profession skill | `GetProfessions` and `GetProfessionInfo` (return 3 rank, return 7 skill line), as Forever's own profession window reads them | Verified: a level 58 Warlock recorded Tailoring 204 and Enchanting 266 under skill lines 197 and 333 |
+| Names | `UnitName("player")` returns first name and surname as two values (Forever `NameUtil.lua`); `GetRealmName()` now returns an empty string, and earlier builds returned a realm | Blizzard source; realm change verified in saved data |
 | Criteria progress | Tradeskills report skill (e.g. 135 / 150). Dungeons and raids list each boss. Reputations report 0 / 42000. Class, rank, quest-line and Onyxia challenges have **no criteria** | Verified |
 | Class challenge progress | Not reported; LegacyPath derives it from character level and labels it "derived" | By design |
 | Reward track | Faction 2802 via `C_MajorFactions`; renown level readable, but `GetRenownRewardsForLevel` returned nothing | Verified — thresholds unavailable |
@@ -70,7 +72,7 @@ Legacy Forever's source was read only to learn which API calls expose Legacy dat
 ## Not verified
 
 - The addon running in the client (see README "Testing status").
-- Whether a challenge earned on another character shows return 13 = false on this one (assumed from the API's meaning).
+- Whether PvP rank, reputation, raid and adventure criteria are also account-wide; LegacyPath makes no claim about them.
 - Whether criteria quantities are ever secret values; the adapter treats a secret as "no data".
 
 ## Sources

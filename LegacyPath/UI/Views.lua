@@ -5,7 +5,7 @@ local UI, P, R, Planner, D = ns.UI, ns.Progress, ns.Recommend, ns.Planner, ns.Da
 local GREEN, GREY, ON = "|cff40c040", "|cff808080", "|cff40c040On|r"
 local SOURCE = {
 	live = "live from the game client",
-	derived = "derived from this character's level",
+	derived = "worked out from your closest character's level",
 	manual = "manual tracking (the client reported no data)",
 }
 
@@ -28,7 +28,9 @@ local function tip(s, extra)
 	t[#t + 1] = "Reward: 1 Legacy Point (account-wide)"
 	t[#t + 1] = "Estimated difficulty: " .. ns.DIFFICULTY[s.o.diff] .. " (a rough guide, not a measurement)"
 	t[#t + 1] = "Progress data: " .. SOURCE[s.source]
-	if s.mine then t[#t + 1] = "Earned on this character" end
+	if s.closest and not s.done and not s.o.minLevel then
+		t[#t + 1] = "Closest character: " .. s.closest.name .. (s.closest.here and " (this character)" or " (when last seen)")
+	end
 	if ns.db.notes[s.id] then t[#t + 1] = "Note: " .. ns.db.notes[s.id] end
 	if extra then t[#t + 1] = extra end
 	return t
@@ -45,7 +47,7 @@ local function objective(s, o)
 	return {
 		title = (s.done and GREEN or "") .. s.name,
 		right = o.right or (s.done and "Done" or pct(s.frac)),
-		detail = o.detail or R.Remaining(s, P.player),
+		detail = o.detail or R.Remaining(s),
 		frac = s.frac, tip = tip(s, o.tip), actions = actions,
 	}
 end
@@ -149,25 +151,31 @@ UI.views.characters = function()
 	local rows, keys, chars = {}, {}, ns.db.chars
 	for key in pairs(chars) do keys[#keys + 1] = key end
 	table.sort(keys, function(a, b) return chars[a].seen > chars[b].seen end)
-	rows[1] = { header = true, title = "Characters seen by LegacyPath", right = "Legacy Points are account-wide" }
+	rows[1] = { header = true, title = "Characters seen by LegacyPath", right = "Challenge progress is account-wide" }
 	for _, key in ipairs(keys) do
 		local c, current = chars[key], key == P.key
-		local lines, earned = { c.name .. " - " .. c.realm, "Earned on this character:" }, 0
+		local realm = c.realm ~= "" and " - " .. c.realm or ""
+		local lines, info = { c.name .. realm, "Closest to:" }, {}
 		for _, s in ipairs(P.list) do
-			if c.mine[s.id] then earned = earned + 1; lines[#lines + 1] = GREEN .. s.name .. "|r" end
+			if not s.done and not s.o.minLevel and s.closest and s.closest.key == key then
+				lines[#lines + 1] = ("%s - %s"):format(s.name, pct(s.frac))
+			end
+			local skill = s.o.skillLine and c.profs and (c.profs[s.o.skillLine] or c.profs[s.o.sub])
+			if skill and not info[s.o.sub] then
+				info[s.o.sub] = true
+				info[#info + 1] = s.o.sub .. " " .. skill
+			end
 		end
-		lines[#lines + 1] = current and "In progress:" or "In progress when last seen:"
-		for _, s in ipairs(P.list) do
-			if c.frac[s.id] and not s.done then lines[#lines + 1] = ("%s - %s"):format(s.name, pct(c.frac[s.id])) end
-		end
+		if #lines == 2 then lines[2] = "Not the closest to any challenge" end
+		if (c.unspent or 0) > 0 then info[#info + 1] = c.unspent .. " unspent" end
+		info[#info + 1] = current and "live this session" or "snapshot from " .. date("%Y-%m-%d", c.seen)
 		local color = RAID_CLASS_COLORS and RAID_CLASS_COLORS[c.class]
 		rows[#rows + 1] = {
-			title = (color and color.colorStr and "|c" .. color.colorStr or "") .. c.name .. "|r - " .. c.realm,
+			title = (color and color.colorStr and "|c" .. color.colorStr or "") .. c.name .. "|r" .. realm,
 			right = ("Level %d %s"):format(c.level, c.className or ""),
-			detail = ("%d earned here%s - %s"):format(earned, (c.unspent or 0) > 0 and (", %d unspent"):format(c.unspent) or "",
-				current and "live this session" or "snapshot from " .. date("%Y-%m-%d", c.seen)),
+			detail = table.concat(info, ", "),
 			tip = lines,
-			actions = not current and { { "Forget", "Delete this snapshot", function() chars[key] = nil; UI.Render() end } } or nil,
+			actions = not current and { { "Forget", "Delete this snapshot", function() chars[key] = nil; P.Refresh(); UI.Render() end } } or nil,
 		}
 	end
 	return rows
@@ -184,7 +192,7 @@ UI.views.settings = function()
 	end
 	local rows = {
 		toggle("Completion messages", "Print a chat line when a Legacy Challenge completes.", "notify"),
-		toggle("Unspent points reminder", "Print a chat line at login, and when you earn more, if this character has Legacy Points to spend.", "unspent"),
+		toggle("Unspent points reminder", "A bubble by the Legacy button if this character has points to spend: at every login, and when you earn more.", "unspent"),
 		toggle("Minimap button", "Show the LegacyPath button on the minimap.", "minimap"),
 		toggle("Tooltip line", "Add a LegacyPath line to Legacy Challenge achievement tooltips.", "tooltip"),
 		toggle("Hide completed objectives", "Leave finished challenges out of the Objectives tab.", "hideDone"),

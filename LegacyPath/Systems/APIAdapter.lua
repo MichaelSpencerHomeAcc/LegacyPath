@@ -27,24 +27,47 @@ function API.Now()
 	return G.time and G.time() or os.time()
 end
 
+-- This character's profession skills, keyed by skill line id and by name. Like Blizzard's
+-- profession window, uses whichever of the two skill sources is filled in.
+function API.Professions()
+	local out = {}
+	for _, index in pairs({ call(G.GetProfessions) }) do
+		local name, _, rank, _, _, _, line = call(G.GetProfessionInfo, index)
+		name, rank, line = plain(name), tonumber(plain(rank)) or 0, plain(line)
+		local info = line and G.C_TradeSkillUI and call(G.C_TradeSkillUI.GetProfessionInfoBySkillLineID, line)
+		rank = math.max(rank, type(info) == "table" and tonumber(plain(info.skillLevel)) or 0)
+		if name and rank > 0 then out[name] = rank end
+		if line and rank > 0 then out[line] = rank end
+	end
+	return out
+end
+
 function API.Player()
 	local className, class = call(G.UnitClass, "player")
+	local first, surname = call(G.UnitName, "player") -- Forever returns the surname second
+	local realm = plain(call(G.GetRealmName)) or "" -- empty on Forever, where full names are unique
+	first, surname = plain(first) or "Unknown", plain(surname)
+	if type(surname) ~= "string" or surname == "" or surname == realm then surname = nil end
+	local consts = G.Constants and G.Constants.CharacterNameSeparatorConsts
 	return {
-		name = plain(call(G.UnitName, "player")) or "Unknown",
-		realm = plain(call(G.GetRealmName)) or "",
+		name = surname and first .. (consts and consts.CHARACTERNAME_SURNAME_SEPARATOR or " ") .. surname or first,
+		first = surname and first, -- nil when there is no surname
+		realm = realm,
 		class = plain(class),
 		className = plain(className),
 		level = tonumber(plain(call(G.UnitLevel, "player"))) or 0,
+		profs = API.Professions(),
 	}
 end
 
 -- One Legacy Challenge as the client reports it, or nil.
--- done = earned on the account; mine = earned by this character.
+-- Completion and criteria are account-wide. The API's "earned by this character" value is not
+-- used: level 1 alts report it for challenges only another character can have earned.
 function API.Challenge(id)
-	local _, name, _, done, month, day, year, desc, _, _, _, _, mine = call(G.GetAchievementInfo, id)
+	local _, name, _, done, month, day, year, desc = call(G.GetAchievementInfo, id)
 	name = plain(name)
 	if type(name) ~= "string" then return nil end
-	local c = { name = name, desc = plain(desc), done = plain(done) == true, mine = plain(mine) == true, criteria = {} }
+	local c = { name = name, desc = plain(desc), done = plain(done) == true, criteria = {} }
 	month, day, year = tonumber(plain(month)), tonumber(plain(day)), tonumber(plain(year))
 	if c.done and month and day and year then
 		c.date = (year < 100 and 2000 + year or year) * 10000 + month * 100 + day

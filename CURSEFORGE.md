@@ -30,12 +30,12 @@ LegacyPath reads your 65 Legacy Challenges from the game, ranks the unfinished o
 - **Planner** — pinned challenges in your order, with notes. A chat message tells you when one completes.
 - **Quest tracker** — your pinned challenges and their progress, right under the quest tracker.
 - **Unspent points reminder** — tells you when a character has Legacy Points to spend.
-- **Characters** — level, challenges earned and progress for each character you log in with, clearly dated as a snapshot.
+- **Characters** — level, professions and unspent points for each character you log in with, clearly dated, plus which of your characters is closest to each class and profession challenge.
 - Movable, resizable and scalable window, optional minimap button, addon compartment entry, and a short line on Legacy Challenge achievement tooltips.
 
 ### Honest data
 
-- Progress comes live from the game client. Class challenges on a matching character are worked out from your level and labelled as such.
+- Progress comes live from the game client. Class challenges are worked out from your highest character of that class and labelled as such.
 - Every challenge's tooltip says where its progress comes from.
 - Difficulty is LegacyPath's own rough guide. There are no made-up time estimates.
 - Reward unlock thresholds and perk costs are not published by Blizzard, so they are not shown.
