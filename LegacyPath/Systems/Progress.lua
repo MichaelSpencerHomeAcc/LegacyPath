@@ -86,7 +86,7 @@ function P.Refresh()
 		local best = closest(o, c and c.criteria or {})
 		local frac, source = fraction(o, c, best)
 		local done = c and c.done or (not c and db.manual[o.id] == true)
-		local s = { id = o.id, o = o, name = c and c.name or o.name, desc = c and c.desc or o.req, done = done,
+		local s = { id = o.id, o = o, name = c and c.name or o.name, desc = c and c.desc or o.req, icon = c and c.icon, done = done,
 			date = c and c.date, criteria = c and c.criteria or {}, frac = done and 1 or frac, source = source,
 			closest = best, who = best and best.key .. best.value }
 		local old = P.states[o.id]

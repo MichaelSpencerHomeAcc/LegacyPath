@@ -35,6 +35,21 @@ function R.Remaining(s)
 	return s.desc or ""
 end
 
+-- Progress as short text for a bar, or nil when there is nothing to count.
+function R.Count(s)
+	local crit, n = s.criteria, 0
+	if #crit == 1 and crit[1].req > 1 then
+		return ("%d / %d"):format(crit[1].q, crit[1].req)
+	elseif #crit > 1 then
+		for _, c in ipairs(crit) do
+			if c.done then n = n + 1 end
+		end
+		return ("%d / %d"):format(n, #crit)
+	elseif s.source == "derived" then
+		return ("Level %d / %d"):format(s.closest.value, s.o.level)
+	end
+end
+
 -- Quest-tracker style lines for an unfinished challenge: a counter, the steps left, or the requirement.
 -- Also returns how many steps were left off the list (0 when none).
 function R.Steps(s, max)

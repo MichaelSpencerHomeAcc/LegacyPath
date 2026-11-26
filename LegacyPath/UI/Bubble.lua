@@ -43,13 +43,19 @@ local function ShowBubble(n)
 	SetText(n)
 	bubble:ClearAllPoints()
 	bubble.arrow:ClearAllPoints()
-	if below then -- a micro menu at the top of the screen; the arrow art only points down
-		bubble:SetPoint("TOP", button, "BOTTOM", 0, -4)
+	if below then -- a micro menu at the top of the screen
+		bubble:SetPoint("TOP", button, "BOTTOM", 0, -18)
+		bubble.arrow:SetPoint("TOP", button, "BOTTOM", 0, 0)
 	else
 		bubble:SetPoint("BOTTOM", button, "TOP", 0, 18)
 		bubble.arrow:SetPoint("BOTTOM", button, "TOP", 0, 0) -- to the button, so clamping the box cannot misalign it
 	end
-	bubble.arrow:SetShown(not below)
+	local arrow = SetClampedTextureRotation and bubble.arrow.Arrow -- the art points down; turn it over when below
+	if arrow then
+		SetClampedTextureRotation(arrow, below and 180 or 0)
+		if bubble.arrow.Glow then bubble.arrow.Glow:SetShown(not below) end
+	end
+	bubble.arrow:SetShown(arrow ~= nil or not below)
 	bubble:Show()
 	return true
 end

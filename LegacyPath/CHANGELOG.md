@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.0 — 2026-11-26
+
+First full release.
+
+- New window layout in the game's classic style: portrait frame, tabs along the bottom, framed cards with challenge icons, and progress bars with the numbers on them. Settings moved to the cog in the top right.
+- Overview replaces Dashboard and Next steps: your points, the best next step, the ones close behind (Show more lists 15), category progress and recent completions.
+- Challenges replaces Objectives: pick a category on the left. Classes and Tradeskills are grids of every tier; hover a square for details and click it to pin. Searching covers every category. The rewards and perks reference is at the end of the list.
+- Plan replaces Planner, with small icon buttons. Characters show class icons and the challenges they are closest to.
+- The reminder bubble's arrow points up when your micro menu is at the top of the screen.
+
 ## 0.3.1 — 2026-11-25
 
 - Fixed: challenge progress and completions are account-wide, but LegacyPath showed them as belonging to each character. The Characters tab listed the account's challenges as "earned here" on every alt, tooltips could say "Earned on this character" wrongly, and recommendations could claim the current character could work on a profession it does not have. The wrong saved values are removed automatically.

@@ -94,7 +94,7 @@ do
 	local SECRET = {}
 	_G.issecretvalue = function(v) return v == SECRET end
 	_G.GetAchievementInfo = function(id)
-		if id == 1 then return 1, "One", 0, true, 11, 9, 26, "Desc", 0, 0, "", false, true end
+		if id == 1 then return 1, "One", 0, true, 11, 9, 26, "Desc", 0, 134400, "", false, true end
 		if id == 2 then return 2, SECRET end
 		if id == 3 then error("boom") end
 	end
@@ -108,6 +108,7 @@ do
 	eq(c.done, true, "adapter: account completion read")
 	eq(c.mine, nil, "adapter: no per-character completion, the API's value is wrong for Legacy")
 	eq(c.date, 20261109, "adapter: completion date")
+	eq(c.icon, 134400, "adapter: icon")
 	eq(c.criteria[1].q, 135, "adapter: criteria quantity")
 	eq(c.criteria[2].q, 0, "adapter: secret quantity becomes 0")
 	eq(api.Challenge(2), nil, "adapter: secret name is treated as no data")
@@ -292,6 +293,10 @@ do
 	local st, by = play(main)
 	eq(st[62029].closest.here, true, "playing the tailor: this character is closest")
 	eq(R.Steps(st[62029])[1], "204/225 Tailoring Skill", "no name needed on that character")
+	eq(R.Count(st[62029]), "204 / 225", "bar text for a counter")
+	eq(R.Count(st[62011]), "Level 56 / 60", "bar text for a level")
+	eq(R.Count({ criteria = { { done = true, req = 1 }, { done = false, req = 1 } } }), "1 / 2", "bar text for steps")
+	eq(R.Count({ criteria = {}, source = "live" }), nil, "no bar text when nothing is counted")
 	eq(R.Steps(st[62011])[1], "Level 56/60", "own class level")
 	eq(by[62029].achievable, true, "and can work on it")
 

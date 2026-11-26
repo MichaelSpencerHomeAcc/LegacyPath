@@ -10,7 +10,7 @@ local returns = {
 	GetText = function(self) return self.text or "" end, SetText = function(self, t) self.text = t end,
 	IsShown = function() return true end, GetSize = function() return 580, 460 end,
 	GetPoint = function() return "CENTER", nil, "CENTER", 0, 0 end, GetCenter = function() return 0, 0 end,
-	GetEffectiveScale = function() return 1 end,
+	GetEffectiveScale = function() return 1 end, GetFrameLevel = function() return 1 end,
 	SetScript = function(self, name, fn) self.scripts[name] = fn end,
 	HookScript = function(self, name, fn) self.scripts[name] = fn end,
 }
@@ -18,7 +18,7 @@ local function widget()
 	local w = { scripts = {} }
 	frames[#frames + 1] = w
 	return setmetatable(w, { __index = function(_, key)
-		if not key:find("^[A-Z]") or key == "TitleText" or key == "EditBox" then return nil end -- a field, not a method
+		if not key:find("^[A-Z]") or key == "EditBox" or key == "Arrow" or key == "Glow" then return nil end -- a field, not a method
 		if key == "GetFontString" or key == "GetParent" or key:find("^Create") then return function() return widget() end end
 		return returns[key] or function() end
 	end })
@@ -30,9 +30,11 @@ end
 
 CreateFrame = function(_, _, _, template)
 	local w = widget()
-	if template == "BasicFrameTemplateWithInset" then w.TitleText = widget() end
+	if template == "GlowBoxArrowTemplate" then w.Arrow, w.Glow = widget(), widget() end
 	return w
 end
+local selectedTab
+PanelTemplates_SetNumTabs, PanelTemplates_SetTab = function() end, function(_, i) selectedTab = i end
 UIParent, Minimap, GameTooltip, GameFontNormal, GameFontHighlight = widget(), widget(), widget(), widget(), widget()
 UISpecialFrames, StaticPopupDialogs, SlashCmdList = {}, {}, {}
 tinsert, date, time = table.insert, os.date, os.time
@@ -90,21 +92,45 @@ ns.db.chars["Alt-Realm"] = { name = "Alt", realm = "Realm", class = "MAGE", clas
 -- Open every tab; click every row and action, re-reading the view after each press.
 local presses = 0
 for _, cmd in ipairs({ "", "next", "scale 1.2", "minimap", "minimap", "reset", "help" }) do SlashCmdList.LEGACYPATH(cmd) end
-for _, tab in ipairs(ns.UI.tabs) do
-	ns.UI.Show(tab.key)
-	for _, text in ipairs({ "", "warlock" }) do
-		local count = #ns.UI.views[tab.key](text)
-		for i = 1, count do
-			local row = ns.UI.views[tab.key](text)[i]
-			if row and row.onClick and row.onClick ~= ns.UI.ResetPosition then row.onClick(); presses = presses + 1 end
-			row = ns.UI.views[tab.key](text)[i]
-			for _, action in ipairs(row and row.actions or {}) do
-				if action[1] ~= "Forget" then action[3](); presses = presses + 1 end
-			end
+local function press(key, text)
+	local view = ns.UI.views[key]
+	for i = 1, #view(text) do
+		local row = view(text)[i]
+		if row and row.onClick and row.onClick ~= ns.UI.ResetPosition then row.onClick(); presses = presses + 1 end
+		row = view(text)[i]
+		for _, cell in ipairs(row and row.cells or {}) do
+			if cell.onClick then cell.onClick(); presses = presses + 1 end
+		end
+		row = view(text)[i]
+		for _, action in ipairs(row and row.actions or {}) do
+			if action[1] ~= "Forget" then action[3](); presses = presses + 1 end
 		end
 	end
 end
+for _, key in ipairs({ "dashboard", "objectives", "planner", "characters", "settings" }) do
+	ns.UI.Show(key)
+	press(key, "")
+	press(key, "warlock")
+end
+assert(selectedTab == 0, "Settings selects no tab")
+local tabs, challenges = ns.UI.tabs, ns.UI.views.objectives
+for _, item in ipairs(tabs[2].side()) do
+	item.onClick()
+	press("objectives", "")
+	assert(ns.UI.cat == item.title and #challenges("") > 0, "category shows something: " .. item.title)
+end
+assert(selectedTab == 2, "Challenges is the second tab")
+ns.UI.Show("objectives", "Classes")
+assert(#challenges("") == 10 and challenges("")[2].cells[3].text, "nine classes and a heading, three tiers each")
+assert(challenges("")[10].cells[1].done, "a finished challenge is ticked in the grid")
+ns.UI.Show("objectives", "Tradeskills")
+assert(#challenges("") == 7, "six professions and a heading")
+assert(#challenges("onyxia") == 1, "a search covers every category")
+ns.Progress.live = false
+assert(#challenges("") == 18, "manual mode lists rows, so there are Done buttons")
+ns.Progress.live = true
 ns.UI.Show("objectives", "Raids")
+assert(#challenges("") == 3, "small categories are lists")
 ns.Progress.Refresh()
 assert(ns.Progress.states[61994].closest.name == "Alt", "the Mage alt is closest to Novice Mage")
 for _, row in ipairs(ns.UI.views.characters("")) do
@@ -182,8 +208,13 @@ LegacySystemFrame = { IsShown = function() return true end }
 panelCallback()
 assert(not shown, "hides when the Legacy panel opens")
 LegacyMicroButton.GetCenter = function() return 0, 1000 end
+local turned
+SetClampedTextureRotation = function(_, degrees) turned = degrees end
 SlashCmdList.LEGACYPATH("points")
-assert(shown, "shows below a micro menu at the top of the screen")
+assert(shown and turned == 180, "below a micro menu at the top of the screen, pointing up")
+LegacyMicroButton.GetCenter = function() return 0, 0 end
+SlashCmdList.LEGACYPATH("points")
+assert(turned == 0, "above a micro menu at the bottom, pointing down")
 CreateFrame = makeFrame
 
 local T, st = ns.Tracker, ns.db.settings

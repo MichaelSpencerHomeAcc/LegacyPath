@@ -64,10 +64,10 @@ end
 -- Completion and criteria are account-wide. The API's "earned by this character" value is not
 -- used: level 1 alts report it for challenges only another character can have earned.
 function API.Challenge(id)
-	local _, name, _, done, month, day, year, desc = call(G.GetAchievementInfo, id)
+	local _, name, _, done, month, day, year, desc, _, icon = call(G.GetAchievementInfo, id)
 	name = plain(name)
 	if type(name) ~= "string" then return nil end
-	local c = { name = name, desc = plain(desc), done = plain(done) == true, criteria = {} }
+	local c = { name = name, desc = plain(desc), icon = plain(icon), done = plain(done) == true, criteria = {} }
 	month, day, year = tonumber(plain(month)), tonumber(plain(day)), tonumber(plain(year))
 	if c.done and month and day and year then
 		c.date = (year < 100 and 2000 + year or year) * 10000 + month * 100 + day

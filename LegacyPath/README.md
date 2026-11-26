@@ -4,7 +4,7 @@
 
 An addon for World of Warcraft: Forever. It reads your 65 Legacy Challenges from the game, ranks the unfinished ones by how close and how doable they are, and lets you keep an ordered plan with notes.
 
-> Seen working in the game client with live data: the Dashboard, Next steps, Objectives and Planner tabs, and the quest tracker section docked under Questie's tracker (following it as zones expand). The unspent points bubble, the closest character in the tracker, and recorded full names and professions have also been seen working. The rest of the checklist below has not been confirmed in game yet.
+> The new window layout has not been seen in the game client yet. Seen working in earlier versions: live data, recommendations, the quest tracker section docked under Questie's tracker, the unspent points bubble, the closest character in the tracker, and recorded full names and professions. The rest of the checklist below has not been confirmed in game.
 
 ## Install
 
@@ -28,10 +28,9 @@ The window also opens from the minimap button and the addon compartment. Drag th
 
 ## Tabs
 
-- **Dashboard** — Legacy Points earned out of 65, any points this character still has to spend, your single best next step, progress per category, recent completions, and a reference list of rewards and perk trees.
-- **Next steps** — up to 15 recommendations. Each shows what is left, the activity, an estimated difficulty, and why it is ranked there. Hover for the full breakdown.
-- **Objectives** — all challenges by category. Click a category header to collapse it. The search box filters by name, category, profession/class, or requirement.
-- **Planner** — challenges you pinned, in your order (Up / Down), each with an optional note. It updates as progress changes and tells you in chat when a pinned challenge completes.
+- **Overview** — Legacy Points earned out of 65, any points this character still has to spend, your best next step and the ones close behind it (Show more lists up to 15), progress per category and recent completions. Hover a challenge for why it is ranked there.
+- **Challenges** — every challenge by category. Classes and Tradeskills are grids with one column per tier: hover a square for details, click it to pin. The search box covers every category and filters by name, category, profession/class, or requirement. The last entry is a reference list of rewards and perks.
+- **Plan** — challenges you pinned, in your order (arrow buttons), each with an optional note. It updates as progress changes and tells you in chat when a pinned challenge completes.
 - **Quest tracker section** — your unfinished pinned challenges (3 by default) appear under the quest tracker (Questie's tracker if you use Questie) with their progress lines. Click one to open your plan, click the header to collapse it, drag the header to move it. Forever does not allow Blizzard's own tracking of Legacy challenges, so this is LegacyPath's own section styled to match.
 - **Characters** — every character LegacyPath has seen: level, professions, unspent points, and the challenges it is the closest character to. Challenge progress itself is account-wide. Log in to each character once so its professions are recorded. Other characters are **snapshots** from their last login, dated as such.
 - **Settings** — completion messages, unspent points reminder, minimap button, tooltip line, hide completed, quest tracker section (on/off, docked, how many), window scale, and which categories to recommend from.
@@ -59,7 +58,7 @@ The window also opens from the minimap button and the addon compartment. Drag th
 
 Every challenge tooltip states which of these its progress uses. If a patch adds challenges, they appear automatically under the game's own category.
 
-**Manual mode:** if the client reports no achievement data, LegacyPath says so on the Dashboard and each challenge gets a Done / Undo button instead. Manual ticks are never mixed with live data.
+**Manual mode:** if the client reports no achievement data, LegacyPath says so on the Overview and each challenge gets a Done / Undo button instead. Manual ticks are never mixed with live data.
 
 ## Limitations
 
@@ -82,13 +81,13 @@ luajit tests/ui_smoke.lua   # loads all files against a stub widget API and pres
 Still to check in the game client:
 
 1. The addon loads without errors and `/lp` opens the window.
-2. Dashboard shows the same points and completions as the Legacy panel.
+2. Overview shows the same points and completions as the Legacy panel.
 3. Window moves, resizes, rescales, and keeps its place after `/reload`.
-4. Pin, reorder, note, and unpin in the Planner; the plan survives `/reload`.
+4. Pin, reorder, note, and unpin on the Plan tab; the plan survives `/reload`.
 5. Gaining a skill point or level updates progress within about a second, and not during combat.
 6. Completing a challenge prints one chat line (and none at login).
 7. A second character appears on the Characters tab and the first becomes a dated snapshot, each with its own professions. On the second, pinned profession and class challenges name the first character.
 8. Minimap button shows, drags, hides. The addon compartment entry opens the window.
 9. Hovering a Legacy Challenge achievement shows the LegacyPath tooltip line.
 10. Pinned challenges appear directly under the quest tracker and follow it as quests are added or removed. Dragging the header undocks it; the Settings toggle docks it again.
-11. With points to spend, every login shows one bubble pointing at the Legacy micro menu button (a `/reload` does not repeat it), which closes when dismissed or when the Legacy panel opens, and the Dashboard shows the count; it matches the Legacy panel's "Available points", and spending them clears it.
+11. With points to spend, every login shows one bubble pointing at the Legacy micro menu button (a `/reload` does not repeat it), which closes when dismissed or when the Legacy panel opens, and the Overview shows the count; it matches the Legacy panel's "Available points", and spending them clears it.
